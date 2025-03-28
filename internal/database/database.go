@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"strings"
+	"time"
 
 	_ "github.com/denisenkom/go-mssqldb" // MS SQL Server
 	_ "github.com/go-sql-driver/mysql"   // MySQL
@@ -114,8 +115,12 @@ func (conn *Connection) Connect(dbType string, dbConnString string) (err error) 
 func (conn *Connection) ExecuteQuery(query string) *protocol.QueryResult {
 	result := &protocol.QueryResult{}
 
+	// TODO: make this timeout duration configurable
+	context, cancelFunc := context.WithTimeout(conn.context, time.Second*20)
+	defer cancelFunc()
+
 	conn.preQuery(&query)
-	rows, err := conn.db.Query(query)
+	rows, err := conn.db.QueryContext(context, query)
 	if err != nil {
 		result.Error = err.Error()
 		return result
